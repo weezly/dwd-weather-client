@@ -22,6 +22,7 @@
   "homepage": "https://github.com/weezly/dwd-weather-client#readme",
   "dependencies": {
     "axios": "^0.21.1",
+    "node-fetch": "^2.6.1",
     "node-line-reader": "0.0.3",
     "sax": "^1.2.4",
     "unzipper": "^0.10.11"

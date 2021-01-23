@@ -7,7 +7,7 @@ var LineTransform = require('node-line-reader').LineTransform;  // LineTransform
 var LineFilter = require('node-line-reader').LineFilter;  // LineFilter constructor
 var transform = new LineTransform();
 
-const readStationCatalog=async ({logger=console.log})=>{    
+const readStationCatalog=async ({logger=console})=>{    
     URL ="https://www.dwd.de/DE/leistungen/met_verfahren_mosmix/mosmix_stationskatalog.cfg?view=nasPublication&nn=16102"
     logger.debug('Downloading station catalog');
     const stations=[]
@@ -52,7 +52,7 @@ const readStationCatalog=async ({logger=console.log})=>{
         });
     });
 }
-const readElementDefinition = async({ logger = console.log })=>{
+const readElementDefinition = async({ logger = console })=>{
     const URL ='https://opendata.dwd.de/weather/lib/MetElementDefinition.xml';
     logger.debug('Downloading MetElementDefinition');
 
@@ -85,6 +85,23 @@ const readElementDefinition = async({ logger = console.log })=>{
                         currentShortName=text;
                         definition[text]={};
                     } else if (currentShortName){
+                        if (currentTag.name == "UnitOfMeasurement"){
+                            if (text == "0°..360°")
+                            {
+                                definition[currentShortName].min = 0
+                                definition[currentShortName].max = 360
+                                text = "°"   
+                            }
+                            // "% (0..80)".match(/\(?([0-9]).*?([0-9][0-9])\)/) => [1]=0 [2]=80
+                            var tokens = text.match(/\(?([0-9]+).*?([0-9]+)\)/)
+                            if (Array.isArray(tokens) && tokens.length==3){
+                                definition[currentShortName].min = parseInt(tokens[1])
+                                definition[currentShortName].max = parseInt(tokens[2])
+                                text=text.replace(/\(.*\)/,"").trim()                                
+                            }
+                            if (text == "-")
+                                text = ""
+                        }
                         definition[currentShortName][currentTag.name]=text;
                     }
                 }
@@ -113,7 +130,7 @@ const readElementDefinition = async({ logger = console.log })=>{
         });
     });
 };
-const readStationForecast = async({ stationId,logger = console.log})=>{
+const readStationForecast = async({ stationId,logger = console})=>{
     const MOSMIX_URL = `https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/${stationId}/kml/MOSMIX_L_LATEST_${stationId}.kmz`;
     logger.debug('Downloading station data');
 
@@ -161,7 +178,7 @@ const readStationForecast = async({ stationId,logger = console.log})=>{
                     case 'dwd:ProductDefinition':
                     case 'kml:Placemark':
                         {
-                            const name = currentTag.name.split(':')[1];
+                            const name = currentTag.name.split(':')[1].toLowerCase();
                             weatherForecast.placemark = weatherForecast.placemark || {};
                             weatherForecast.placemark[name]=text;
                         }
@@ -209,8 +226,53 @@ const readStationForecast = async({ stationId,logger = console.log})=>{
     });
 };
 
+const indexedForecastData=async({forecastData,definition=null})=>{
+    return new Promise(async(resolve,reject)=>{
+        try{
+            const result={
+                header:{
+                    ...forecastData.placemark,
+                    coordinates: forecastData.coordinates
+                },
+                definition
+            }
+            Object.keys(result.definition).forEach(key=>{
+                result.definition[key]={
+                    ...result.definition[key],
+                    UnitOfMeasurement: result.definition[key].UnitOfMeasurement.replace("% (0..100)", "%").replace("0°..360°","°")
+                }
+            })
+            result.forecast=forecastData.times.map((time,index)=>{
+                const data={
+                    index:index,
+                    time: time,
+                }
+                Object.keys(forecastData.forecast).forEach(key=>{
+                    if (definition){
+                        const value = forecastData.forecast[key][index]
+                        data[key] = {
+                            raw: value,
+                            string: `${Number.isNaN(value) ? "---" : value} ${definition[key].UnitOfMeasurement}`
+                        }
+                    }
+                    else{
+                        data[key] = forecastData.forecast[key][index]
+                    }
+                })
+
+                return data
+            })
+            
+            return resolve(result)
+        } catch(err){
+            reject(err)
+        }
+    })
+}
+
 module.exports={
     readStationForecast : readStationForecast,
     readStationCatalog: readStationCatalog,
-    readElementDefinition: readElementDefinition
+    readElementDefinition: readElementDefinition,
+    indexedForecastData: indexedForecastData
 };

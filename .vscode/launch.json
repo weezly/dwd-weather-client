@@ -1,0 +1,44 @@
+{
+    // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+    // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+    // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "radio-now_playing",
+            "program": "${workspaceFolder}\\dwd-weather-client\\test\\radio\\now_playing.js",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "mosmix-readElementDefinition",
+            "program": "${workspaceFolder}\\dwd-weather-client\\test\\mosmix\\readElementDefinition",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "mosmix-readStationCatalog",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\dwd-weather-client\\test\\mosmix\\readStationCatalog.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "mosmix-readStationForecast",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\dwd-weather-client\\test\\mosmix\\readStationForecast.js"
+        }
+    ]
+}
